@@ -1,0 +1,210 @@
+```{r}
+library(dplyr)
+library(tidyr)
+```
+
+ELEJIMOS EL FILE airbnb_clean.csv EN EL DIRECTORIO NUESTRO
+
+```{r}
+file.choose()
+```
+
+
+Copiamos el resultado con comillas incluidas y lo pongo en ruta_csv
+```{r}
+ruta_csv <- "/Users/marialourdesramos/Downloads/airbnb_clean.csv"
+airbnb<-read.csv2(ruta_csv, dec = '.')
+head(airbnb)
+```
+
+```{r}
+typeof(airbnb) 
+```
+
+
+```{r}
+summary(airbnb)
+```
+
+```{r}
+glimpse(airbnb)
+airbnb
+```
+
+CAMBIAMOS:
+
+Latitude y Longitude a float
+Bathrooms, Bedrooms, Beds a int
+price, security deposit, cleaning fee a float
+review.Scores.Rating a int
+Reviews.per.month a float
+
+```{r}
+#airbnb$Latitude <- as.numeric(as.character(airbnb$Latitude))
+#options(digits = 12)
+#airbnb$Longitude <- as.numeric(as.character(airbnb$Longitude))
+#airbnb$Zipcode <- as.integer(as.character(airbnb$Zipcode))
+#airbnb$Bedrooms <- as.integer(as.character(airbnb$Bedrooms))
+#airbnb$Bathrooms <- as.integer(as.character(airbnb$Bathrooms))
+#airbnb$Beds <- as.integer(as.character(airbnb$Beds))
+#airbnb$Price <- as.numeric(as.character(airbnb$Price))
+#airbnb$Security.Deposit <- as.numeric(as.character(airbnb$Security.Deposit))
+#airbnb$Cleaning.Fee <- as.numeric(as.character(airbnb$Cleaning.Fee))
+#airbnb$Number.of.Reviews <- as.integer(as.character(airbnb$Number.of.Reviews))
+#airbnb$Review.Scores.Rating <- as.integer(as.character(airbnb$Review.Scores.Rating))
+#airbnb$Reviews.per.Month <- as.numeric(as.character(airbnb$Reviews.per.Month))
+#airbnb$Accommodates <- as.integer(as.character(airbnb$Accommodates))
+#head(airbnb)
+```
+
+
+FILTRAMOS PARA QUEDARNOS CON MADRID
+
+```{r}
+airbnb <- airbnb[airbnb$City== 'Madrid',]
+
+#airbnb <- filter(airbnb, City == 'Madrid')
+
+airbnb
+
+```
+
+
+
+CAMBIAMOS LOS NULL/NA POR LA MEDIA DE CADA COLUMNA
+
+```{r}
+colSums(is.na(airbnb))
+```
+
+```{r}
+airbnb <- drop_na(airbnb, Price)
+airbnb <- drop_na(airbnb, Bathrooms)
+airbnb <- drop_na(airbnb, Beds)
+airbnb <- drop_na(airbnb, Bedrooms)
+airbnb <- drop_na(airbnb, Zipcode)
+
+colSums(is.na(airbnb))
+dim(airbnb)
+```
+
+```{r}
+
+mean(airbnb$Review.Scores.Rating, na.rm = TRUE) 
+mean(airbnb$Reviews.per.Month, na.rm = TRUE) 
+
+```
+
+```{r}
+airbnb %>% replace_na(list(
+  Review.Scores.Rating = mean(airbnb$Review.Scores.Rating, na.rm = TRUE) ,
+  Reviews.per.Month = mean(airbnb$Reviews.per.Month, na.rm = TRUE) 
+)) -> airbnb
+
+airbnb$Cleaning.Fee[is.na(airbnb$Cleaning.Fee)] <- 0
+airbnb$Security.Deposit[is.na(airbnb$Security.Deposit)] <- 0
+
+
+```
+
+```{r}
+airbnb
+```
+
+
+CREAMOS UNA NUEVA COLUMNA CON EL PRECIO TOTAL
+
+```{r}
+airbnb <- mutate(airbnb, precio.total = Price + Cleaning.Fee + Security.Deposit)
+airbnb
+```
+
+ORDENAMOS LA TABLA DE MANERA DESCENDENTE POR PRECIO.TOTAL
+
+```{r}
+airbnb <- arrange(airbnb, desc(precio.total))
+airbnb
+```
+ELIMINAMOS LAS COLUMNAS PRECIO, CLEANING.FEE Y SECURITY.DEPOSIT DEL DATASET
+```{r}
+airbnb <- airbnb[,c("ID", "Host.Since", "City", "Neighbourhood.Group.Cleansed", "Latitude", "Longitude", "Zipcode", "Property.Type", "Room.Type", "Accommodates", "Bathrooms", "Bedrooms", "Beds", "Bed.Type", "Number.of.Reviews", "Review.Scores.Rating", "Reviews.per.Month", "Cancellation.Policy","precio.total", "Amenities", "Features")]
+
+dim(airbnb)
+```
+
+
+SEPARAMOS LA TABLA AMENITIES Y FEATURES EN DISTINTAS FILAS, EN CONCORDANCIA CON EL ID:
+
+```{r}
+Amentiies_clean <- airbnb[,c("Amenities", "ID")]
+Amentiies_clean <- separate_rows_(Amentiies_clean, "Amenities",sep = ',')
+Features_clean <- airbnb[,c("Features", "ID")]
+Features_clean <- separate_rows_(Features_clean, "Features",sep = ',')
+Features_clean
+```
+
+
+ABRIMOS LA BASE DE DATOS DE PRECIO/M2 POR BARRIO EN MADRID
+
+```{r}
+file.choose()
+```
+
+Copiamos el resultado con comillas incluidas y lo pongo en ruta_csv
+```{r}
+ruta_csv_precio <-  "/Users/marialourdesramos/Downloads/Prom_Price_m2_2017_.csv"
+airbnb2<-read.csv(ruta_csv_precio)
+head(airbnb2)
+```
+
+
+evaluamos missings en el dataset de precio/m2 
+
+```{r}
+#airbnb2 <- as.data.frame(airbnb2)
+colSums(is.na(airbnb2))
+glimpse(airbnb2)
+```
+
+```{r}
+airbnb2 %>%  rename(Neighbourhood.Group.Cleansed = barrio) ->airbnb2
+airbnb2 %>%  rename(precio_m2_2017 = precios) ->airbnb2
+airbnb2
+```
+
+
+```{r}
+unique(airbnb2$precio_m2_2017)
+```
+
+
+UNIMOS LAS DOS TABLAS CON UN LEFT JOIN
+
+```{r}
+airbnb <- left_join(airbnb, airbnb2, by= "Neighbourhood.Group.Cleansed")
+
+airbnb
+```
+evaluamos missings en el nuevo dataframe
+```{r}
+colSums(is.na(airbnb))
+dim(airbnb)
+```
+
+
+```{r}
+airbnb <- as.data.frame(sapply(airbnb, function(x) iconv(x, from = "UTF-8", to = "ASCII//TRANSLIT")))
+airbnb$Neighbourhood.Group.Cleansed = gsub("'", "", airbnb$Neighbourhood.Group.Cleansed) 
+airbnb
+```
+
+
+
+GUARDO LA BASE LIMPIA:
+
+```{r}
+write.csv2(airbnb, "airbnb.cleaned.csv")
+write.csv2(Amentiies_clean, "amenities_cleaned.csv")
+write.csv2(Features_clean, "Features_cleaned.csv")
+```
+

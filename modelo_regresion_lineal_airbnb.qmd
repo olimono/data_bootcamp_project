@@ -1,0 +1,270 @@
+```{r}
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(GGally)
+```
+
+ELEJIMOS EL FILE airbnb_clean.csv EN EL DIRECTORIO NUESTRO
+
+```{r}
+file.choose() #distritos_madrid1.csv
+```
+
+```{r}
+ruta_csv <- "/Users/marialourdesramos/Downloads/Distritos_Madrid1.csv"
+distritos<-read.csv2(ruta_csv,header = TRUE, sep = ',', dec = ',')
+
+distritos <- as.data.frame(sapply(distritos, function(x) iconv(x,from = "UTF-8", to = "ASCII//TRANSLIT")))
+distritos$DISTRITOS<- gsub("'", "", distritos$DISTRITOS)
+distritos$Zipcode <- as.integer(as.character(distritos$Zipcode))
+distritos
+```
+
+```{r}
+ruta_csv <- "/Users/marialourdesramos/Downloads/airbnb_for_tableau_FINAL.csv" #airbnb_for_tableau_FINAL.csv
+airbnb_df<-read.csv2(ruta_csv,header = TRUE, sep = ';', dec = ',')
+
+airbnb_df
+```
+
+LEFT JOIN DE DISTRITOS CON AIRBNB_DF PARA HOMOGEINEIZAR Y ARREGLAR LOS ZIPCODES INCORRECTOS EN EL DATASET
+
+```{r}
+distritos %>%  rename(Neighbourhood.Group.Cleansed = DISTRITOS) -> distritos
+#distritos
+airbnb_df <- left_join(airbnb_df, distritos, by = "Neighbourhood.Group.Cleansed")
+airbnb_df
+```
+
+```{r}
+colSums(is.na(airbnb_df))
+drop_na(airbnb_df) -> airbnb_df
+dim(airbnb_df)
+```
+
+```{r}
+airbnb_df %>%  rename(Zipcode = Zipcode.y) -> airbnb_df
+airbnb_df
+```
+
+```{r}
+colnames(airbnb_df)
+```
+
+```{r}
+airbnb_df <- airbnb_df[,c("ID", "Host.Since", "City", "Neighbourhood.Group.Cleansed", "Latitude", "Longitude", "Zipcode", "Property.Type", "Room.Type", "Accommodates", "Bathrooms", "Bedrooms", "Beds", "Number.of.Reviews", "Review.Scores.Rating", "Reviews.per.Month", "Cancellation.Policy","precio.total", "Prom.Price.m2.2017","Wireless.Internet" ,"Kitchen" , "Heating"     ,"Essentials","Washer" , "TV", "Elevator.in.building","Family.kid.friendly", "Iron" ,"Hair.dryer" , "Air.conditioning"       , "Laptop.friendly.workspace" ,"Smoke.detector","Wheelchair.accessible" , "Lock.on.bedroom.door" , "Free.parking.on.premises"  )]
+dim(airbnb_df)
+airbnb_df
+```
+
+```{r}
+ruta_csv <- "/Users/marialourdesramos/Downloads/airbnb.cleaned.csv" #airnb_cleaned.csv
+airbnb_cleaned<-read.csv2(ruta_csv,header = TRUE, sep = ';', dec = '.')
+airbnb_cleaned$Zipcode <- as.integer(as.character(airbnb_cleaned$Zipcode))
+#airbnb_cleaned$Bathrooms <- as.numeric(as.character(airbnb_cleaned$Bathrooms))
+airbnb_cleaned
+```
+
+```{r}
+colnames(airbnb_cleaned)
+colnames(airbnb_df)
+```
+
+```{r}
+airbnb_df$Latitude <- as.numeric(as.character(airbnb_df$Latitude), errors='coerce')
+options(digits = 12)
+airbnb_df$Longitude <- as.numeric(as.character(airbnb_df$Longitude))
+airbnb_df$Review.Scores.Rating <- as.numeric(as.character(airbnb_df$Review.Scores.Rating))
+airbnb_df$Reviews.per.Month <- as.numeric(as.character(airbnb_df$Reviews.per.Month))
+airbnb_df$Prom.Price.m2.2017 <- as.integer(as.character(airbnb_df$Prom.Price.m2.2017))
+airbnb_df$Bathrooms <- as.numeric(as.character(airbnb_df$Bathrooms))
+head(airbnb_df)
+```
+
+```{r}
+airbnb_df_prueba <- left_join(airbnb_df, airbnb_cleaned, by = "ID")
+airbnb_df_prueba
+```
+
+```{r}
+colSums(is.na(airbnb_df_prueba))
+```
+
+```{r}
+colnames(airbnb_df_prueba)
+```
+
+```{r}
+airbnb_df_2 <- airbnb_df_prueba[,c("ID", "Host.Since.x", "City.x", "Neighbourhood.Group.Cleansed.x", "Latitude.y", "Longitude.y", "Zipcode.x", "Property.Type.x", "Room.Type.x", "Accommodates.x", "Bathrooms.x", "Bedrooms.x", "Beds.x", "Number.of.Reviews.x", "Review.Scores.Rating.y", "Reviews.per.Month.y", "Cancellation.Policy.x","precio.total.x", "precio_m2_2017", "Wireless.Internet", "Kitchen", "Heating","Essentials", "Washer", "TV", "Elevator.in.building", "Family.kid.friendly", "Iron", "Hair.dryer", "Air.conditioning", "Laptop.friendly.workspace", "Smoke.detector", "Wheelchair.accessible", "Lock.on.bedroom.door", "Free.parking.on.premises")]
+
+
+airbnb_df_2 %>%  rename(Neighbourhood.Group.Cleansed = Neighbourhood.Group.Cleansed.x) |>
+  rename(Host.Since = Host.Since.x) |>
+  rename(City = City.x) |>
+  rename(Latitude = Latitude.y) |>
+  rename(Longitude = Longitude.y) |>
+  rename(Zipcode = Zipcode.x) |>
+  rename(Property.Type = Property.Type.x) |>
+  rename(Room.Type= Room.Type.x) |>
+  rename(Accommodates = Accommodates.x) |>
+  rename(Bathrooms = Bathrooms.x) |>
+  rename(Bedrooms = Bedrooms.x) |>
+  rename(Beds = Beds.x) |>
+  rename(Number.of.Reviews = Number.of.Reviews.x) |>
+  rename(Review.Scores.Rating = Review.Scores.Rating.y) |>
+  rename(Reviews.per.Month = Reviews.per.Month.y) |>
+  rename(Cancellation.Policy = Cancellation.Policy.x) |>
+  rename(precio.total = precio.total.x)   -> airbnb_df_2
+
+airbnb_df_2
+```
+
+```{r}
+write.csv2(airbnb_df_2, "airbnb_cleaned_TF.csv")
+```
+
+```{r}
+ruta_csv <- "/Users/marialourdesramos/Downloads/airbnb_cleaned_TF.csv"
+airbnb_<-read.csv(ruta_csv,header = TRUE, sep = ';', dec = ',')
+airbnb_
+```
+
+```{r}
+airbnb_ <- airbnb_[!is.na(airbnb_[,"Property.Type"]) & airbnb_[,"Property.Type"] != "Bungalow", ]
+airbnb_ <- airbnb_[!is.na(airbnb_[,"Property.Type"]) & airbnb_[,"Property.Type"] != "Tent", ]
+
+dim(airbnb_)
+airbnb_<-airbnb_[,c("Zipcode", "Property.Type", "Room.Type", "Accommodates", "Bathrooms", "Bedrooms", "Beds", "Number.of.Reviews", "Review.Scores.Rating", "Reviews.per.Month", "Cancellation.Policy","precio.total", "precio_m2_2017", "Wireless.Internet", "Kitchen", "Heating","Essentials", "Washer", "TV", "Elevator.in.building", "Family.kid.friendly", "Iron", "Hair.dryer", "Air.conditioning", "Laptop.friendly.workspace", "Smoke.detector", "Wheelchair.accessible", "Lock.on.bedroom.door", "Free.parking.on.premises")]
+
+library(GGally)
+ggpairs(airbnb_[,c("Zipcode","Property.Type", "Room.Type", "Accommodates", "Bathrooms", "Bedrooms", "Beds", "Number.of.Reviews", "Review.Scores.Rating", "Reviews.per.Month", "Cancellation.Policy","precio.total", "precio_m2_2017", "Wireless.Internet", "Kitchen", "Heating","Essentials", "Washer", "TV", "Elevator.in.building", "Family.kid.friendly", "Iron", "Hair.dryer", "Air.conditioning", "Laptop.friendly.workspace", "Smoke.detector", "Wheelchair.accessible", "Lock.on.bedroom.door", "Free.parking.on.premises")],
+lower = list(continuous = wrap("points", alpha = 0.3,size=0.03,color='blue'), theme(axis.text = element_text(angle = 90)))
+) 
+
+```
+
+```{r}
+ggpairs(airbnb_[,c("Zipcode","Property.Type", "Room.Type", "Accommodates", "Bathrooms", "Bedrooms", "Beds", "Number.of.Reviews", "Review.Scores.Rating", "Reviews.per.Month", "Cancellation.Policy","precio.total", "precio_m2_2017")],
+lower = list(continuous = wrap("points", alpha = 0.03,size=0.03,color='blue'), theme(axis.text = element_text(size = 0,1)))
+) 
+```
+
+```{r}
+ggpairs(airbnb_[,c("Wireless.Internet", "Kitchen", "Heating","Essentials", "Washer", "TV", "Elevator.in.building", "Family.kid.friendly", "Iron", "Hair.dryer", "Air.conditioning", "Laptop.friendly.workspace", "Smoke.detector", "Wheelchair.accessible", "Lock.on.bedroom.door", "Free.parking.on.premises","precio.total")],
+lower = list(continuous = wrap("points", alpha = 0.3,size=0.3,color='blue'), size= 5)
+) 
+
+
+```
+
+
+```{r}
+ggplot(airbnb_, aes(x=Zipcode, y=precio.total))+geom_point(color='blue')+
+  geom_smooth(method='lm', formula = y~x, color='red')+
+  xlab('Barrio')+ylab('Total Price')+
+  ggtitle("Relacion de precio entre distintos barrios de Airbnb")
+```
+
+```{r}
+ggplot(airbnb_, aes(x=Wireless.Internet, y=precio.total))+geom_point(color='blue')+
+  geom_smooth(method='lm', formula = y~x, color='red')+
+  xlab('internet')+ylab('Total Price')+
+  ggtitle("Relacion de precio entre tener internet o no en el Airbnb")
+```
+
+```{r}
+ggplot(airbnb_, aes(x=Property.Type, y=precio.total))+geom_point(color='blue')+
+  geom_smooth(method='lm', formula = y~x, color='red')+
+  xlab('Property Type')+ylab('Total Price')+
+  theme(axis.text = element_text(angle = 45))+
+  ggtitle("Relacion de precio entre tener distintos tipos de propiedades de Airbnb")
+```
+
+```{r}
+ggpairs(airbnb_[,c("Property.Type", "precio.total")],
+lower = list(continuous = wrap("points", alpha = 0.3,size=0.03, color='blue'))
+) 
+```
+
+
+VEMOS LAS CORRELACIONES SEGUN EL DATAFRAME CON EL PRECIO.TOTAL
+
+```{r}
+cor(airbnb_$precio.total, airbnb_$Zipcode)
+cor(airbnb_$precio.total, airbnb_$Wireless.Internet)
+```
+
+PLANTEAMOS EL MODELO DE REGRESION LINEAL QUE NOS PREDICE EL PRECIO TOTAL DEL ALQUILER DEL AIRBNB SEGUN LAS CARACTERISTICAS QUE ELIJA EL PROPIETARIO A COMPRAR.
+
+
+```{r}
+set.seed(1234)
+idx <- sample(1:nrow(airbnb_), nrow(airbnb_)*0.7)
+airbnb_.train <- airbnb_[idx,]
+airbnb_.test <- airbnb_[-idx,]
+
+```
+
+formula = : calcula, el precio \~ dependiendo de estas variables (property.type, bathrooms, bedrooms, amenities, etc)
+
+```{r}
+model1 <- lm(data=airbnb_.train, formula=precio.total~Zipcode+Property.Type+Room.Type+Accommodates+Bathrooms+Bedrooms+Beds+Number.of.Reviews+Review.Scores.Rating+Reviews.per.Month+precio_m2_2017+Wireless.Internet + Kitchen +Heating+Essentials+Washer+TV + Elevator.in.building+Family.kid.friendly+Iron + Hair.dryer+ Air.conditioning +Laptop.friendly.workspace + Smoke.detector +Wheelchair.accessible +Lock.on.bedroom.door +Free.parking.on.premises)
+
+summary(model1)
+```
+
+QUITAMOS LAS VARIABLES QUE NO APORTARIAN AL MODELO, PARA HACERLO MAS SENCILLO.
+
+```{r}
+model2 <- lm(data=airbnb_.train, formula=precio.total~Zipcode+Property.Type+Room.Type+Accommodates+Bathrooms+Bedrooms+Number.of.Reviews+Review.Scores.Rating+Reviews.per.Month+precio_m2_2017+ Kitchen+TV + Elevator.in.building+ Air.conditioning +Laptop.friendly.workspace + Smoke.detector +Wheelchair.accessible +Free.parking.on.premises)
+
+summary(model2)
+```
+
+
+
+
+
+
+precide el modelo. (todavia no esta terminado esto....)
+con caret te permite ver el analisis del modelo, y ver si es bueno.
+y comparar los dos grupos: train y test
+overfitting o underfitting
+y tambien hay q evaluar los residuos.
+
+
+
+
+
+
+La calidad del modelo medida en Training:
+
+```{r}
+airbnb_.train$pred <- predict(model2, airbnb_.train)
+caret::postResample(pred=airbnb_.train$pred, obs=airbnb_.train$precio.total)
+```
+```{r}
+airbnb_.train$residuos <- airbnb_.train$precio.total - airbnb_.train$pred
+ggplot(airbnb_.train, aes(x=precio.total, y=residuos))+geom_point(color='blue')+
+  ggtitle("Residuos en dataset Training")
+```
+
+La calidad del modelo en testing:
+```{r}
+airbnb_.test$pred <- predict(model2, airbnb_.test)
+caret::postResample(pred=airbnb_.test$pred, obs=airbnb_.test$precio.total)
+```
+
+```{r}
+airbnb_.test$residuos <- airbnb_.test$precio.total - airbnb_.test$pred
+ggplot(airbnb_.test, aes(x=precio.total, y=residuos))+geom_point(color='blue')+
+  ggtitle("Residuos en dataset Testing")
+```
+
+```{r}
+df_prueba <- data.frame(Zipcode=c(28043), Property.Type= "Loft", Room.Type= "Private room", Accommodates = c(4), Bathrooms = c(2), Bedrooms = c(2),Number.of.Reviews = c(0), Review.Scores.Rating=c(0), Reviews.per.Month= c(0),precio_m2_2017=c(3500), Kitchen = c(0), TV= c(0), Elevator.in.building = c(0), Air.conditioning = c(0), Laptop.friendly.workspace=c(0),Smoke.detector =c(0), Wheelchair.accessible = c(1), Free.parking.on.premises= c(0))
+
+prediccion <- df_prueba$precio.total <- predict(model2, df_prueba) 
+prediccion
+```
